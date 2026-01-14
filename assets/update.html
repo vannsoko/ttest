@@ -1,0 +1,13 @@
+{% extends "admin/challenges/update.html" %}
+
+{% block value %}
+<div class="form-group">
+	<label for="value">Value<br>
+		<small class="form-text text-muted">
+			This is how many points the challenge is worth.
+		</small>
+	</label>
+	<input type="number" class="form-control chal-value" name="value" value="{{ challenge.value }}" disabled>
+</div>
+{% endblock %}
+

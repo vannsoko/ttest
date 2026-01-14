@@ -1,0 +1,23 @@
+{% extends "admin/challenges/create.html" %}
+
+{% block header %}
+<div class="alert alert-secondary" role="alert">
+	This is a challenge that works with our instancer.
+</div>
+{% endblock %}
+
+
+{% block value %}
+<div class="form-group">
+	<label for="value">Value<br>
+		<small class="form-text text-muted">
+			This is how many points the challenge is worth..
+		</small>
+	</label>
+	<input type="number" class="form-control" name="value" placeholder="Enter value" required>
+</div>
+{% endblock %}
+
+{% block type %}
+<input type="hidden" value="instancer" name="type" id="chaltype">
+{% endblock %}
