@@ -17,18 +17,22 @@
             <div class="card-body">
                 <h5 class="card-title">Instance Info</h5>
 
-                <div class="small d-flex align-items-center mt-2">
-                    <code id="instancer-url">https://some-challenge-1234abcdef.chals.ctf.h4tum.de:1337</code>
-                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2"
+                <div class="small"> Remaining: <span id="instancer-count-down"></span></div>
+
+                <div class="small d-flex align-items-center mt-2" id="instancer-url-div">
+                    <code id="instancer-url"></code>
+                    <button type="button" class="btn btn-outline-secondary btn-sm ms-2" id="instancer-button-url-copy"
                         onclick="CTFd._internal.challenge.copy_instance_url()"><i
                             class="fa-regular fa-copy"></i></button>
                 </div>
-                <button type="button" class="btn btn-success btn-sm card-link"
+                <!-- <button type="button" class="btn btn-success btn-sm card-link"
                     style="background-color:#5fbf47; border-color:#000000;" id="instancer-button-renew"
-                    onclick="CTFd._internal.challenge.renew()"> Renew </button>
+                    onclick="CTFd._internal.challenge.renew()"> Renew </button> -->
                 <button type="button" class="btn btn-success btn-sm card-link"
                     style="background-color:#479abf; border-color:#000000;" id="instancer-button-restart"
-                    onclick="CTFd._internal.challenge.restart()"> Restart </button>
+                    onclick="CTFd._internal.challenge.restart()"> Restart <span id="instancer-restart-spinner"
+                        class="spinner-border spinner-border-sm ms-2" role="status"
+                        style="display: none;"></span></button>
                 <button type="button" class="btn btn-danger btn-sm card-link"
                     style="background-color:#b43c2c; border-color:#000000;" id="instancer-button-destroy"
                     onclick="CTFd._internal.challenge.destroy()"> Destroy
@@ -42,7 +46,7 @@
             <div class="card-body">
                 <h5 class="card-title">Instance Info</h5>
                 <button type="button" class="btn btn-success btn-sm card-link"
-                    style="background-color:#479abf; border-color:#000000;" id="instancer-button-renew"
+                    style="background-color:#479abf; border-color:#000000;" id="instancer-button-spawn"
                     onclick="CTFd._internal.challenge.spawn()"> Spawn
                     <span id="instancer-spawn-spinner" class="spinner-border spinner-border-sm ms-2" role="status"
                         style="display: none;"></span>

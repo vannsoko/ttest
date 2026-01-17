@@ -99,4 +99,8 @@ def load(app):
     @app.route("/admin/instancer_route", methods=["GET"])
     def instancer_route():
         return render_template("page.html", content="<h1>BLA Page</h1>")
+    
+    # register API endpoints
+    from . import api
+
     print("Init finished", flush=True)
