@@ -23,7 +23,7 @@ class InstancerChallengeModel(Challenges):
 def find_chall_short_name(challenge_id: int) -> str | None:
     """ Find the short name for the challenge """
     chall_short_name = db.session.execute(
-        db.select(InstancerChallengeModel).filter_by(challenge_id=challenge_id)).first()
+        db.select(InstancerChallengeModel).filter_by(id=challenge_id)).first()
     if chall_short_name:
         return chall_short_name.chall_short_name
     return None
