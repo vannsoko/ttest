@@ -26,12 +26,17 @@ INSTANCER_URL = "https://localhost:1337/api/v1/"
 API_TOKEN = "GENERIC_API_TOKEN_BLA"
 
 
-def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response:
+def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response | str:
 
     headers = {"Content-Type": "application/json",
                "Accept": "application/json",
                "X-API-Key": API_TOKEN}
-    return requests.request(method, INSTANCER_URL + endpoint, json=params, headers=headers, stream=stream)
+    try:
+        res = requests.request(
+            method, INSTANCER_URL + endpoint, json=params, headers=headers, stream=stream)
+        return res
+    except Exception as e:
+        return str(e)
 
 
 def query_instance_status(challenge_id: int) -> None | dict[str, Any] | tuple[str, int]:
@@ -64,6 +69,8 @@ def query_instance_status(challenge_id: int) -> None | dict[str, Any] | tuple[st
     }
 
     res = do_instancer_request("GET", "challengeStatus", params)
+    if isinstance(res, str):
+        return res, 500
     res_data = res.json()
 
     if res.status_code != 200 or res_data["status"] != "success":
@@ -149,12 +156,21 @@ class Instance(Resource):
             build_params = {
                 "challenge": chall_short_name,
                 "team": str(team_id),
-                "flag": get_team_flag(challenge_id,team_id),
+                "flag": get_team_flag(challenge_id, team_id),
                 "force": False
             }
-            img_build_res = do_instancer_request("POST", "buildImage", build_params)
+            img_build_res = do_instancer_request(
+                "POST", "buildImage", build_params)
+            if isinstance(img_build_res, str):
+                return jsonify({
+                    "success": False,
+                    "error": img_build_res
+                }), 500
             if img_build_res.status_code != 200:
-                print(f"Failed to build image: {img_build_res.json()['error']}", flush=True)
+                return jsonify({
+                    "success": False,
+                    "error": img_build_res.json()['error']
+                }), img_build_res.status_code
 
         params = {
             "challenge": chall_short_name,
@@ -162,6 +178,11 @@ class Instance(Resource):
             "instance": str(instance_id)
         }
         res = do_instancer_request("POST", "deployChallenge", params)
+        if isinstance(res, str):
+            return jsonify({
+                "success": False,
+                "error": res
+            }), 500
         res_data = res.json()
 
         if res.status_code != 200 or res_data["status"] != "success":
@@ -237,6 +258,11 @@ class Instance(Resource):
 
         res = do_instancer_request(
             "POST", "destroyChallengeDeployment", params)
+        if isinstance(res, str):
+            return jsonify({
+                "success": False,
+                "error": res
+            }), 500
         res_data = res.json()
 
         if res.status_code != 200 or res_data["status"] != "success":
@@ -269,7 +295,7 @@ class File(Resource):
 
         if chall_short_name is None:
             return jsonify({
-                "success": False, 
+                "success": False,
                 "message": "Could not find challenge short name."
             }), 500
 
@@ -279,7 +305,14 @@ class File(Resource):
             "challenge": chall_short_name,
             "team": str(team_id)
         }
-        get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
+        get_res = do_instancer_request(
+            "GET", "getFiles", get_params, stream=True)
+
+        if isinstance(get_res, str):
+            return jsonify({
+                "success": False,
+                "error": get_res
+            }), 500
 
         if get_res.status_code != 200:
             if get_res.status_code == 428:
@@ -288,10 +321,9 @@ class File(Resource):
 
                 if team_flag is None:
                     return jsonify({
-                        "success": False, 
+                        "success": False,
                         "message": "Could not create challenge files because challenge has no associated flag."
                     }), 400
-
 
                 build_params = {
                     "challenge": chall_short_name,
@@ -299,27 +331,41 @@ class File(Resource):
                     "flag": team_flag,
                     "force": False
                 }
-                build_res = do_instancer_request("POST", "buildFiles", build_params)
+                build_res = do_instancer_request(
+                    "POST", "buildFiles", build_params)
+
+                if isinstance(build_res, str):
+                    return jsonify({
+                        "success": False,
+                        "error": build_res
+                    }), 500
 
                 if build_res.status_code != 202:
                     return jsonify({
-                        "success": False, 
+                        "success": False,
                         "message": f"Could not build challenge files: {build_res.json()['error']}"
                     }), 500
 
                 # retry getting the flag files
-                get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
+                get_res = do_instancer_request(
+                    "GET", "getFiles", get_params, stream=True)
+                if isinstance(get_res, str):
+                    return jsonify({
+                        "success": False,
+                        "error": get_res
+                    }), 500
+
                 if get_res.status_code != 200:
                     return jsonify({
-                        "success": False, 
+                        "success": False,
                         "message": f"Could not get challenges files, even after building: {get_res.json()['error']}"
                     }), 500
             else:
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "message": f"Could not get challenge files: {get_res.json()['error']}"
                 }), 500
-            
+
         def generate():
             for chunk in get_res.iter_content(chunk_size=8192):
                 if chunk:
