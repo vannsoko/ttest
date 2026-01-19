@@ -87,45 +87,45 @@ class Instance(Resource):
         challenge_id = request.args.get("challengeId", type=int)
 
         if challenge_id is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "No challengeId provided!"
-            }, 400
+            }), 400
 
         res = query_instance_status(challenge_id)
 
         if isinstance(res, tuple):
-            return {
+            return jsonify({
                 "success": False,
                 "message": res[0]
-            }, res[1]
+            }), res[1]
 
         if res is None or "deployed" not in res:
-            return {
+            return jsonify({
                 "success": True,
                 "data": {
                     "running": False
                 }
-            }, 200
+            }), 200
 
         expires = datetime.fromisoformat(res["expires"])
 
         if expires <= datetime.now():
-            return {
+            return jsonify({
                 "success": True,
                 "data": {
                     "running": False,
                 }
-            }, 200
+            }), 200
 
-        return {
+        return jsonify({
             "success": True,
             "data": {
                 "running": True,
                 "expires": expires.isoformat(),
                 "urls": query_instance_urls(challenge_id, get_current_team().id),
             }
-        }, 200
+        }), 200
 
     @staticmethod
     @authed_only
@@ -133,18 +133,18 @@ class Instance(Resource):
         """ Used to spawn an instance for the team """
         challenge_id = request.args.get("challengeId", type=int)
         if challenge_id is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "No challengeId provided!"
-            }, 400
+            }), 400
 
         chall_short_name = find_chall_short_name(challenge_id)
 
         if chall_short_name is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "Could not find challenge short name."
-            }, 500
+            }), 500
 
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
@@ -186,10 +186,10 @@ class Instance(Resource):
         res_data = res.json()
 
         if res.status_code != 200 or res_data["status"] != "success":
-            return {
+            return jsonify({
                 "success": False,
                 "message": f"Instancer failed deployment with: " + res_data.get("error", "undefined error")
-            }, 500
+            }), 500
         res_data = res_data["data"]
 
         for deployed_port_data in res_data:
@@ -217,9 +217,9 @@ class Instance(Resource):
 
             add_instance_url(challenge_id, team_id, url)
 
-        return {
+        return jsonify({
             "success": True,
-        }, 200
+        }), 200
 
     @staticmethod
     @authed_only
@@ -228,27 +228,27 @@ class Instance(Resource):
         challenge_id = request.args.get("challengeId", type=int)
 
         if challenge_id is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "No challengeId provided!"
-            }, 400
+            }), 400
 
         chall_short_name = find_chall_short_name(challenge_id)
 
         if chall_short_name is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "Could not find challenge short name."
-            }, 500
+            }), 500
 
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
 
         if instance_id is None:
-            return {
+            return jsonify({
                 "success": False,
                 "error": "No instance running for team."
-            }, 200
+            }), 200
 
         params = {
             "challenge": chall_short_name,
@@ -266,16 +266,16 @@ class Instance(Resource):
         res_data = res.json()
 
         if res.status_code != 200 or res_data["status"] != "success":
-            return {
+            return jsonify({
                 "success": False,
                 "message": f"Stopping instance failed with: " + res_data.get("error", "undefined error")
-            }, 500
+            }), 500
 
         remove_instance_urls(challenge_id, team_id)
 
-        return {
+        return jsonify({
             "success": True,
-        }, 200
+        }), 200
 
 
 @CTFd_API_v1.route(f"{PLUGIN_PREFIX}/files")
@@ -286,10 +286,10 @@ class File(Resource):
         """ Proxy for the file download. """
         challenge_id = request.args.get("challengeId", type=int)
         if challenge_id is None:
-            return {
+            return jsonify({
                 "success": False,
                 "message": "No challengeId provided!"
-            }, 400
+            }), 400
 
         chall_short_name = find_chall_short_name(challenge_id)
 
