@@ -2,7 +2,7 @@ from CTFd.models import Challenges, Flags, db  # type: ignore
 from CTFd.exceptions.challenges import ChallengeCreateException  # type: ignore
 from CTFd.plugins import flag_sharing_prot  # type: ignore
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from typing import Optional
 
 
@@ -54,6 +54,7 @@ def update_instance_id(challenge_id: int, team_id: int, instance_id: int):
 
 class InstanceURLs(db.Model):
     __tablename__ = "instance_urls"
+    id = db.Column(db.Integer, primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey(
         "teams.id", ondelete="CASCADE"))
     challenge_id = db.Column(db.Integer, db.ForeignKey(
@@ -103,9 +104,10 @@ def find_chall_short_name(challenge_id: int) -> str | None:
         return chall_short_name.chall_short_name
     return None
 
-
+# Note: CTFd requires pydantic v1, this model should be compatible
 class DeployedPort(BaseModel):
-    model_config = ConfigDict(extra='forbid')
+    class Config:
+        extra = 'forbid'
 
     name: str
     display: bool

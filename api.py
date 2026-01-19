@@ -121,6 +121,7 @@ class Instance(Resource):
         }, 200
 
     @staticmethod
+    @authed_only
     def post():
         """ Used to spawn an instance for the team """
         challenge_id = request.args.get("challengeId", type=int)
@@ -153,7 +154,7 @@ class Instance(Resource):
             }
             img_build_res = do_instancer_request("POST", "buildImage", build_params)
             if img_build_res.status_code != 200:
-                print(f"Failed to build image: {img_build_res.json()["error"]}", flush=True)
+                print(f"Failed to build image: {img_build_res.json()['error']}", flush=True)
 
         params = {
             "challenge": chall_short_name,
@@ -172,7 +173,7 @@ class Instance(Resource):
 
         for deployed_port_data in res_data:
             # TODO: deployed_port.description is currently ignored
-            deployed_port = DeployedPort.model_validate(deployed_port_data)
+            deployed_port = DeployedPort(**deployed_port_data)
             if not deployed_port.display:
                 # do not show hidden ports to the user
                 continue
@@ -191,7 +192,7 @@ class Instance(Resource):
                     print(
                         f"[error] Got DeployedPort with unknown type = {deployed_port.type}", flush=True)
                     continue
-                url = f"nc {" -ssl" if deployed_port.ssl else ""}{deployed_port.hostname} {deployed_port.port}"
+                url = f"nc {' -ssl' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
 
             add_instance_url(challenge_id, team_id, url)
 
@@ -200,6 +201,7 @@ class Instance(Resource):
         }, 200
 
     @staticmethod
+    @authed_only
     def delete():
         """ Used to destroy an instance for a team. """
         challenge_id = request.args.get("challengeId", type=int)
@@ -250,87 +252,89 @@ class Instance(Resource):
         }, 200
 
 
-@CTFd_API_v1.route(f"{PLUGIN_PREFIX}/files", methods=["GET"])
-@authed_only
-def get_files():
-    """ Proxy for the file download. """
-    challenge_id = request.args.get("challengeId", type=int)
-    if challenge_id is None:
-        return {
-            "success": False,
-            "message": "No challengeId provided!"
-        }, 400
+@CTFd_API_v1.route(f"{PLUGIN_PREFIX}/files")
+class File(Resource):
+    @staticmethod
+    @authed_only
+    def get():
+        """ Proxy for the file download. """
+        challenge_id = request.args.get("challengeId", type=int)
+        if challenge_id is None:
+            return {
+                "success": False,
+                "message": "No challengeId provided!"
+            }, 400
 
-    chall_short_name = find_chall_short_name(challenge_id)
+        chall_short_name = find_chall_short_name(challenge_id)
 
-    if chall_short_name is None:
-        return jsonify({
-            "success": False, 
-            "message": "Could not find challenge short name."
-        }), 500
-
-    team_id = get_current_team().id
-
-    get_params = {
-        "challenge": chall_short_name,
-        "team": str(team_id)
-    }
-    get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
-
-    if get_res.status_code != 200:
-        if get_res.status_code == 428:
-            # files have not been built, build them
-            team_flag = get_team_flag(challenge_id, team_id)
-
-            if team_flag is None:
-                return jsonify({
-                    "success": False, 
-                    "message": "Could not create challenge files because challenge has no associated flag."
-                }), 400
-
-
-            build_params = {
-                "challenge": chall_short_name,
-                "team": str(team_id),
-                "flag": team_flag,
-                "force": False
-            }
-            build_res = do_instancer_request("POST", "buildFiles", build_params)
-
-            if build_res.status_code != 202:
-                return jsonify({
-                    "success": False, 
-                    "message": f"Could not build challenge files: {build_res.json()["error"]}"
-                }), 500
-
-            # retry getting the flag files
-            get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
-            if get_res.status_code != 200:
-                return jsonify({
-                    "success": False, 
-                    "message": f"Could not get challenges files, even after building: {get_res.json()["error"]}"
-                }), 500
-        else:
+        if chall_short_name is None:
             return jsonify({
                 "success": False, 
-                "message": f"Could not get challenge files: {get_res.json()["error"]}"
+                "message": "Could not find challenge short name."
             }), 500
-        
-    def generate():
-        for chunk in get_res.iter_content(chunk_size=8192):
-            if chunk:
-                yield chunk
 
-    headers = {
-        "Content-Type": get_res.headers.get("Content-Type", "application/octet-stream"),
-        "Content-Disposition": get_res.headers.get(
-            "Content-Disposition",
-            "attachment; filename=chall_files.bin"
+        team_id = get_current_team().id
+
+        get_params = {
+            "challenge": chall_short_name,
+            "team": str(team_id)
+        }
+        get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
+
+        if get_res.status_code != 200:
+            if get_res.status_code == 428:
+                # files have not been built, build them
+                team_flag = get_team_flag(challenge_id, team_id)
+
+                if team_flag is None:
+                    return jsonify({
+                        "success": False, 
+                        "message": "Could not create challenge files because challenge has no associated flag."
+                    }), 400
+
+
+                build_params = {
+                    "challenge": chall_short_name,
+                    "team": str(team_id),
+                    "flag": team_flag,
+                    "force": False
+                }
+                build_res = do_instancer_request("POST", "buildFiles", build_params)
+
+                if build_res.status_code != 202:
+                    return jsonify({
+                        "success": False, 
+                        "message": f"Could not build challenge files: {build_res.json()['error']}"
+                    }), 500
+
+                # retry getting the flag files
+                get_res = do_instancer_request("GET", "getFiles", get_params, stream=True)
+                if get_res.status_code != 200:
+                    return jsonify({
+                        "success": False, 
+                        "message": f"Could not get challenges files, even after building: {get_res.json()['error']}"
+                    }), 500
+            else:
+                return jsonify({
+                    "success": False, 
+                    "message": f"Could not get challenge files: {get_res.json()['error']}"
+                }), 500
+            
+        def generate():
+            for chunk in get_res.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+
+        headers = {
+            "Content-Type": get_res.headers.get("Content-Type", "application/octet-stream"),
+            "Content-Disposition": get_res.headers.get(
+                "Content-Disposition",
+                "attachment; filename=chall_files.bin"
+            )
+        }
+
+        return Response(
+            generate(),
+            headers=headers,
+            status=200
         )
-    }
-
-    return Response(
-        generate(),
-        headers=headers,
-        status=200
-    )

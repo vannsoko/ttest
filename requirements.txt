@@ -1,4 +1,2 @@
 requests
-flask
-flask-restx
-pydantic>=2.0
+pydantic<2.0
