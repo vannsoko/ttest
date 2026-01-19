@@ -193,10 +193,18 @@ class Instance(Resource):
                     "message": img_build_res.json()['error']
                 }, img_build_res.status_code
 
+        team_flag = get_team_flag(challenge_id, team_id)
+        if team_flag is None:
+            return {
+                "success": False,
+                "message": "Could not create challenge files because challenge has no associated flag."
+            }, 400
+
         params = {
             "challenge": chall_short_name,
             "team": str(team_id),
-            "instance": str(instance_id)
+            "instance": str(instance_id),
+            "flag": team_flag,
         }
         res = do_instancer_request("POST", "deployChallenge", params)
         if isinstance(res, str):
