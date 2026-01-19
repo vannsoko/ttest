@@ -30,6 +30,8 @@ def do_instancer_request(method: str, endpoint: str, params: dict[str, str], str
     headers = {"Content-Type": "application/json",
                "Accept": "application/json",
                "X-API-Key": api_token}
+    if not instancer_url.endswith("/"):
+        instancer_url += "/"
     try:
         res = requests.request(
             method, instancer_url + endpoint, json=params, headers=headers, stream=stream)
