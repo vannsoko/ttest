@@ -164,6 +164,15 @@ class Instance(Resource):
             update_instance_id(challenge_id, team_id, 1)
             instance_id = 1
 
+        status_res = query_instance_status(challenge_id)
+        assert status_res is not None
+        if isinstance(status_res, tuple):
+            return {
+                "success": False,
+                "message": status_res[0]
+            }, status_res[1]
+
+        if not status_res["image_built"]:
             # the challenge image has not been built yet, build it
             build_params = {
                 "challenge": chall_short_name,
@@ -200,7 +209,7 @@ class Instance(Resource):
         if res.status_code != 200 or res_data["status"] != "success":
             return {
                 "success": False,
-                "message": f"Instancer failed deployment with: " + res_data.get("error", "undefined error")
+                "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
             }, 500
         res_data = res_data["data"]
 
