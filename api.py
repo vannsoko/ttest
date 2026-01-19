@@ -8,6 +8,8 @@ from datetime import datetime
 import requests
 from typing import Any
 
+import os
+
 from .models import (
     get_instance_id,
     update_instance_id,
@@ -21,19 +23,16 @@ from .models import (
 
 PLUGIN_PREFIX = "/plugins/instancer-plugin"
 
-# TODO: make this configurable
-INSTANCER_URL = "https://localhost:1337/api/v1/"
-API_TOKEN = "GENERIC_API_TOKEN_BLA"
-
 
 def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response | str:
-
+    api_token = os.environ["CTFD_INSTANCER_API_TOKEN"]
+    instancer_url = os.environ["CTFD_INSTANCER_URL"]
     headers = {"Content-Type": "application/json",
                "Accept": "application/json",
-               "X-API-Key": API_TOKEN}
+               "X-API-Key": api_token}
     try:
         res = requests.request(
-            method, INSTANCER_URL + endpoint, json=params, headers=headers, stream=stream)
+            method, instancer_url + endpoint, json=params, headers=headers, stream=stream)
         return res
     except Exception:
         return "Request to instancer failed."
