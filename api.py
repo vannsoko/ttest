@@ -111,6 +111,14 @@ class Instance(Resource):
                     "running": False
                 }
             }, 200
+        
+        if "expires" is not res or res["expires"] is None:
+            return {
+                "success": True,
+                "data": {
+                    "running": False,
+                }
+            }, 200
 
         expires = datetime.fromisoformat(res["expires"])
 
