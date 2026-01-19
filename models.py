@@ -20,9 +20,11 @@ class InstancerChallengeModel(Challenges):
         except KeyError:
             raise ChallengeCreateException("Missing value for challenge")
 
+
 def find_chall_short_name(challenge_id: int) -> str | None:
     """ Find the short name for the challenge """
-    chall = db.session.query(InstancerChallengeModel).filter_by(id=challenge_id).first()
+    chall = db.session.query(InstancerChallengeModel).filter_by(
+        id=challenge_id).first()
     if chall:
         return chall.short_name
     return None
@@ -39,15 +41,17 @@ class Instances(db.Model):
 
 def get_instance_id(challenge_id: int, team_id: int) -> int | None:
     """ Get the instance id associated with challenge_id and team_id """
-    instance = db.session.query(Instances).filter_by(challenge_id=challenge_id, team_id=team_id).first()
+    instance = db.session.query(Instances).filter_by(
+        challenge_id=challenge_id, team_id=team_id).first()
     if instance is None:
         return None
     return instance.instance_id
 
 
 def update_instance_id(challenge_id: int, team_id: int, instance_id: int):
-    """ Update the instance id associated with challenge_id and team_id """    
-    instance = db.session.query(Instances).filter_by(challenge_id=challenge_id, team_id=team_id).first()
+    """ Update the instance id associated with challenge_id and team_id """
+    instance = db.session.query(Instances).filter_by(
+        challenge_id=challenge_id, team_id=team_id).first()
     if instance:
         instance.instance_id = instance_id
     else:
@@ -109,10 +113,7 @@ class DeployedPort(BaseModel):
 
 def get_team_flag(challenge_id: int, team_id: int) -> str | None:
     # CAUTION: We do not support challenges with multiple flags
-    flag_obj = Flags.query.filter_by(
-        challenge_id=challenge_id,
-        type="myflag"
-    ).first()
+    flag_obj = Flags.query.filter_by(challenge_id=challenge_id).first()
     if flag_obj is None:
         return None
     flag = flag_obj.content
