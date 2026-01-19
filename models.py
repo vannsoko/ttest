@@ -22,8 +22,7 @@ class InstancerChallengeModel(Challenges):
 
 def find_chall_short_name(challenge_id: int) -> str | None:
     """ Find the short name for the challenge """
-    chall = db.session.execute(
-        db.select(InstancerChallengeModel).filter_by(id=challenge_id)).first()
+    chall = db.session.query(InstancerChallengeModel).filter_by(id=challenge_id).first()
     if chall:
         return chall.short_name
     return None
@@ -40,17 +39,15 @@ class Instances(db.Model):
 
 def get_instance_id(challenge_id: int, team_id: int) -> int | None:
     """ Get the instance id associated with challenge_id and team_id """
-    instance = db.session.execute(db.select(Instances).filter_by(
-        challenge_id=challenge_id).filter_by(team_id=team_id)).first()
+    instance = db.session.query(Instances).filter_by(challenge_id=challenge_id, team_id=team_id).first()
     if instance is None:
         return None
     return instance.instance_id
 
 
 def update_instance_id(challenge_id: int, team_id: int, instance_id: int):
-    """ Update the instance id associated with challenge_id and team_id """
-    instance = db.session.execute(db.select(Instances).filter_by(
-        challenge_id=challenge_id).filter_by(team_id=team_id)).first()
+    """ Update the instance id associated with challenge_id and team_id """    
+    instance = db.session.query(Instances).filter_by(challenge_id=challenge_id, team_id=team_id).first()
     if instance:
         instance.instance_id = instance_id
     else:
