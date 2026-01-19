@@ -11,6 +11,7 @@ class InstancerChallengeModel(Challenges):
     id = db.Column(
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
+    short_name = db.Column(db.Text, unique=True, nullable=False)
 
     def __init__(self, *args, **kwargs):
         super(InstancerChallengeModel, self).__init__(**kwargs)
@@ -18,6 +19,14 @@ class InstancerChallengeModel(Challenges):
             self.value = kwargs["value"]
         except KeyError:
             raise ChallengeCreateException("Missing value for challenge")
+
+def find_chall_short_name(challenge_id: int) -> str | None:
+    """ Find the short name for the challenge """
+    chall_short_name = db.session.execute(
+        db.select(InstancerChallengeModel).filter_by(challenge_id=challenge_id)).first()
+    if chall_short_name:
+        return chall_short_name.chall_short_name
+    return None
 
 
 class Instances(db.Model):
@@ -87,23 +96,6 @@ def remove_instance_urls(challenge_id: int, team_id: int):
                                           InstanceURLs.challenge_id == challenge_id).delete(synchronize_session=False)
     db.session.commit()
 
-
-class ChallShortName(db.Model):
-    __tablename__ = "chall_short_names"
-    challenge_id = db.Column(db.Integer, db.ForeignKey(
-        "challenges.id", ondelete="CASCADE"), primary_key=True)
-    chall_short_name = db.Column(db.Text, nullable=False, unique=True)
-
-
-def find_chall_short_name(challenge_id: int) -> str | None:
-    """ Find the short name for the challenge """
-    # TODO: move this into the InstancerChallengeModel and query it on challenge creation
-    chall_short_name = db.session.execute(
-        db.select(ChallShortName).filter_by(challenge_id=challenge_id)).first()
-    if chall_short_name:
-        return chall_short_name.chall_short_name
-    return None
-
 # Note: CTFd requires pydantic v1, this model should be compatible
 class DeployedPort(BaseModel):
     class Config:
@@ -140,4 +132,3 @@ def create_models():
     InstancerChallengeModel.__table__.create(db.engine, checkfirst=True)
     InstanceURLs.__table__.create(db.engine, checkfirst=True)
     Instances.__table__.create(db.engine, checkfirst=True)
-    ChallShortName.__table__.create(db.engine, checkfirst=True)

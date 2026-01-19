@@ -8,6 +8,12 @@
 		</small>
 	</label>
 	<input type="number" class="form-control chal-value" name="value" value="{{ challenge.value }}" disabled>
+	<label for="short_name">Value<br>
+		<small class="form-text text-muted">
+			Internal short name used for deployment.
+		</small>
+	</label>
+	<input type="text" class="form-control" name="short_name" value="{{ challenge.short_name }}" disabled>
 </div>
 {% endblock %}
 

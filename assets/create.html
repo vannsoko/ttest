@@ -11,10 +11,16 @@
 <div class="form-group">
 	<label for="value">Value<br>
 		<small class="form-text text-muted">
-			This is how many points the challenge is worth..
+			This is how many points the challenge is worth.
 		</small>
 	</label>
 	<input type="number" class="form-control" name="value" placeholder="Enter value" required>
+	<label for="short_name">Value<br>
+		<small class="form-text text-muted">
+			Internal short name used for deployment.
+		</small>
+	</label>
+	<input type="text" class="form-control" name="short_name" placeholder="Enter short name" required>
 </div>
 {% endblock %}
 
