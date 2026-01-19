@@ -1,4 +1,4 @@
 requests
 flask
 flask-restx
-pydantic==2.x
+pydantic>=2.0
