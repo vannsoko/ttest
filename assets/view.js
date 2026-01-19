@@ -268,7 +268,6 @@ CTFd._internal.challenge.destroy = function () {
     $('#instancer-button-restart').prop("disabled", false);
   });
 }
-
 CTFd._internal.challenge.copy_instance_url = function () {
   const url = $('#instancer-url').text();
   navigator.clipboard.writeText(url).then(() => {
