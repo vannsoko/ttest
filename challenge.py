@@ -9,8 +9,7 @@ from CTFd.utils.modes import get_model # type: ignore
 from .util import logger
 from .models import InstancerChallengeModel
 
-# DISCORD_URL = os.getenv("FIRST_BLOOD_DISCORD_WEBHOOK")
-DISCORD_URL = "https://discord.com/api/webhooks/1463217991658504284/KNMmC0d7YuX_OxbyWhCZYw0JGLslLThT8ivZV4MU20NlQORqyWArJeGTvhYtXhae1vYf"
+DISCORD_URL = os.getenv("FIRST_BLOOD_DISCORD_WEBHOOK")
 SOUND_HOST_URL = os.getenv("SOUND_HOST_URL")
 SOUND_SECRET = os.getenv("SOUND_SECRET")
 
@@ -137,7 +136,7 @@ class InstancerChallenge(BaseChallenge):
         data = {
             "content": f"## 🩸 FIRST BLOOD! 🩸\n**{team.name}** has first blooded **{challenge.name}**🩸",
                 "username": "First Blood Pinguin",
-                "avatar_url": "https://qr.h4tum.de/h4tum_logo.png",
+                "avatar_url": "https://register.h4tum.de/static/h4tum_logo_discord.png",
         }
         try:
             requests.post(DISCORD_URL, json=data)
