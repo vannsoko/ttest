@@ -107,7 +107,7 @@ class Instance(Resource):
         data = {}
         for key in ["image_built", "image_building", "files_ready", "files_building", "deployed", "expires"]:
             if key in res:
-                data[key] = res
+                data[key] = res[key]
         
         urls = []
         for deployed_port_data in res["ports"]:
