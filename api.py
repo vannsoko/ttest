@@ -8,7 +8,7 @@ import requests
 from typing import Any
 import os
 
-from . import logger
+from .util import logger
 
 from .models import (
     get_chal,

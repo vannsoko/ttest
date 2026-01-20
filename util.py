@@ -18,3 +18,5 @@ def setup_logger():
         # Add handler to logger
         logger.addHandler(console_handler)
     return logger
+
+logger = setup_logger()

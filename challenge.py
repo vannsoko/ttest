@@ -6,7 +6,7 @@ from CTFd.models import db  # type: ignore
 from CTFd.plugins.challenges import BaseChallenge, Solves # type: ignore
 from CTFd.utils.modes import get_model # type: ignore
 
-from . import logger
+from .util import logger
 from .models import InstancerChallengeModel
 
 # DISCORD_URL = os.getenv("FIRST_BLOOD_DISCORD_WEBHOOK")
