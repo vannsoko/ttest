@@ -89,7 +89,7 @@ def get_team_flag(challenge_id: int, team_id: int) -> str | None:
     if flag_obj.type != flag_sharing_prot.SharingProtectedFlag.name:
         return flag
 
-    return flag_sharing_prot.get_team_flag(flag, challenge_id, team_id)
+    return flag_sharing_prot.get_team_flag(flag, team_id, challenge_id)
 
 
 def create_models():
