@@ -5,6 +5,9 @@ from CTFd.plugins.challenges import CHALLENGE_CLASSES # type: ignore
 
 from .challenge import InstancerChallenge
 from .models import create_models
+from .util import setup_logger
+
+logger = setup_logger()
 
 def load(app):
     print("Booting instancer-plugin", flush=True)

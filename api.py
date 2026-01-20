@@ -6,9 +6,9 @@ from flask import request, Response
 from flask_restx import Resource
 import requests
 from typing import Any
-import logging
-
 import os
+
+from . import logger
 
 from .models import (
     get_instance_id,
@@ -18,9 +18,6 @@ from .models import (
 )
 
 PLUGIN_PREFIX = "/plugins/instancer-plugin"
-
-logger = logging.Logger("instancer-plugin")
-logger.setLevel(logging.DEBUG)
 
 def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response | str:
     api_token = os.environ["CTFD_INSTANCER_API_TOKEN"]
