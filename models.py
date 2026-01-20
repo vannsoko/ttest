@@ -19,12 +19,13 @@ class InstancerChallengeModel(Challenges):
     decay_factor = db.Column(db.Float, default=0.)
 
     def __init__(self, *args, **kwargs):
-        super(InstancerChallengeModel, self).__init__(**kwargs)
         try:
-            self.value = kwargs["initial"]
+            kwargs.update({"value": kwargs.pop("initial")})
         except KeyError:
             raise ChallengeCreateException("Missing initial value for challenge")
-
+        super(InstancerChallengeModel, self).__init__(**kwargs)
+        self.value = kwargs["value"]
+        
 
 def find_chall_short_name(challenge_id: int) -> str | None:
     """ Find the short name for the challenge """
