@@ -2,11 +2,11 @@ from CTFd.api import CTFd_API_v1  # type: ignore
 from CTFd.utils.decorators import authed_only  # type: ignore
 from CTFd.utils.user import get_current_team  # type: ignore
 
-from flask import request, jsonify, Response
+from flask import request, Response
 from flask_restx import Resource
-from datetime import datetime
 import requests
 from typing import Any
+import logging
 
 import os
 
@@ -19,6 +19,8 @@ from .models import (
 
 PLUGIN_PREFIX = "/plugins/instancer-plugin"
 
+logger = logging.Logger("instancer-plugin")
+logger.setLevel(logging.DEBUG)
 
 def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response | str:
     api_token = os.environ["CTFD_INSTANCER_API_TOKEN"]
@@ -146,14 +148,18 @@ class Instance(Resource):
     @authed_only
     def post():
         """ Used to spawn an instance for the team """
+        logger.debug("POST: instance")
         challenge_id = request.args.get("challengeId", type=int)
         if challenge_id is None:
+            logger.debug("POST instance: challenge_id has not been provided.")
             return {
                 "success": False,
                 "message": "No challengeId provided!"
             }, 400
 
         chall_short_name = find_chall_short_name(challenge_id)
+
+        logger.debug(f"POST instance: chall_short_name = {chall_short_name}")
 
         if chall_short_name is None:
             return {
@@ -164,37 +170,21 @@ class Instance(Resource):
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
 
+        logger.debug(f"POST instance: query_instance_status: {challenge_id}, {team_id}, {instance_id}")
         status_res = query_instance_status(challenge_id)
         assert status_res is not None
         if isinstance(status_res, tuple):
+            logger.debug(f"POST instance: query_instance_status failed: {status_res[0]}, {status_res[1]}")
             return {
                 "success": False,
                 "message": status_res[0]
             }, status_res[1]
-
-        if not status_res["image_built"]:
-            # the challenge image has not been built yet, build it
-            build_params = {
-                "challenge": chall_short_name,
-                "team": str(team_id),
-                "flag": get_team_flag(challenge_id, team_id),
-                "force": False
-            }
-            img_build_res = do_instancer_request(
-                "POST", "buildImage", build_params)
-            if isinstance(img_build_res, str):
-                return {
-                    "success": False,
-                    "message": img_build_res
-                }, 500
-            if img_build_res.status_code != 200:
-                return {
-                    "success": False,
-                    "message": img_build_res.json()['error']
-                }, img_build_res.status_code
+        
+        logger.debug(f"POST instance: query_instance_status = {status_res}")
 
         team_flag = get_team_flag(challenge_id, team_id)
         if team_flag is None:
+            logger.debug("POST instance: no team flag found.")
             return {
                 "success": False,
                 "message": "Could not create challenge files because challenge has no associated flag."
@@ -206,15 +196,19 @@ class Instance(Resource):
             "instance": str(instance_id),
             "flag": team_flag,
         }
+        logger.debug(f"POST instance: deploy_params = {params}")
         res = do_instancer_request("POST", "deployChallenge", params)
         if isinstance(res, str):
+            logger.debug(f"POST instance: deployChallenge failed: {res}")
             return {
                 "success": False,
                 "message": res
             }, 500
         res_data = res.json()
+        logger.debug(f"POST instance: deployChallenge result = {res.status_code}, {res_data}")
 
         if res.status_code != 202 or res_data["status"] != "success":
+            logger.debug(f"POST instance: deployChallenge reported error: {res_data.get("error", "undefined error")}")
             return {
                 "success": False,
                 "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
