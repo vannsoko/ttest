@@ -204,7 +204,7 @@ class Instance(Resource):
         res_data = res.json()
         logger.debug(f"POST instance: deployChallenge result = {res.status_code}, {res_data}")
 
-        if res.status_code != 202 or res_data["status"] != "success":
+        if (res.status_code != 202 and res.status_code != 200) or res_data["status"] != "success":
             logger.debug(f"POST instance: deployChallenge reported error: {res_data.get('error', 'undefined error')}")
             return {
                 "success": False,
