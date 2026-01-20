@@ -105,7 +105,7 @@ function loaded_instance_info(instance_data) {
   $('#instancer-panel-running').hide();
   $('#instancer-panel-stopped').hide();
   $('#instancer-panel-building').hide();
-  if (instance_data.deployed !== undefined && instance_data.expires !== undefined) {
+  if (instance_data.deployed !== null && instance_data.expires !== null) {
     $('#instancer-panel-running').show();
 
     show_urls(instance_data.urls);
@@ -123,7 +123,7 @@ function loaded_instance_info(instance_data) {
         $('#instancer-count-down').text(format_count_down(count_down));
       }, 1000);
     }
-  } else if (instance_data.image_building) {
+  } else if (instance_data.image_building === true) {
     $('#instancer-panel-building').show();
   } else {
     $('#instancer-panel-stopped').show();
