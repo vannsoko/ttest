@@ -66,10 +66,10 @@ function format_count_down(countdown) {
 }
 
 function show_urls(urls) {
-  const div = $("#instancer-url-div");
-  div.show();
-  if (div.length == 0) {
-    div.hide();
+  const $div = $("#instancer-url-div");
+  $div.show();
+  if (urls.length == 0) {
+    $div.hide();
     return;
   }
   for (const [index, url] of urls.entries()) {
@@ -96,7 +96,7 @@ function show_urls(urls) {
         }, 1500);
       });
     });
-    $container.append($row);
+    $div.append($row);
   }
 }
 
