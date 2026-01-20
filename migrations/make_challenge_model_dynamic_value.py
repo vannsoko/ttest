@@ -36,6 +36,7 @@ def upgrade():
 
 
 def downgrade():
+    table_name = InstancerChallengeModel.__table__.name
     op.drop_column(table_name, "decay_factor")
     op.drop_column(table_name, "decay_base")
     op.drop_column(table_name, "minimum")
