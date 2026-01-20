@@ -77,7 +77,7 @@ function show_urls(urls) {
     const code_id = `instancer-url-${index}`;
     const button_id = `instancer-button-url-copy-${index}`;
     const $row = $(`
-        <div class="d-flex align-items-center mb-2">
+        <div class="d-flex align-items-center mb-2" style="margin:0 auto;">
           <code id="${code_id}"></code>
           <button type="button"
                   class="btn btn-outline-secondary btn-sm ms-2" 
