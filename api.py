@@ -11,6 +11,7 @@ import os
 from . import logger
 
 from .models import (
+    get_chal,
     get_instance_id,
     find_chall_short_name,
     DeployedPort,
@@ -135,6 +136,7 @@ class Instance(Resource):
             urls.append(url)
 
         data["urls"] = urls
+        data["needs_deployment"] = get_chal(challenge_id).needs_deployment
 
         return {
             "success": True,
@@ -152,6 +154,12 @@ class Instance(Resource):
             return {
                 "success": False,
                 "message": "No challengeId provided!"
+            }, 400
+        
+        if not get_chal(challenge_id).needs_deployment:
+            return {
+                "success": False,
+                "message": "Challenge does not require deployment."
             }, 400
 
         chall_short_name = find_chall_short_name(challenge_id)
@@ -225,6 +233,12 @@ class Instance(Resource):
             return {
                 "success": False,
                 "message": "No challengeId provided!"
+            }, 400
+
+        if not get_chal(challenge_id).needs_deployment:
+            return {
+                "success": False,
+                "message": "Challenge does not require deployment."
             }, 400
 
         chall_short_name = find_chall_short_name(challenge_id)

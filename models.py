@@ -7,6 +7,7 @@ from typing import Optional
 
 DEFAULT_INSTANCE_ID = 1
 
+
 class InstancerChallengeModel(Challenges):
     __mapper_args__ = {"polymorphic_identity": "instancer"}
     id = db.Column(
@@ -17,15 +18,21 @@ class InstancerChallengeModel(Challenges):
     minimum = db.Column(db.Integer, default=0)
     decay_base = db.Column(db.Float, default=0.)
     decay_factor = db.Column(db.Float, default=0.)
+    needs_deployment = db.Column(db.Boolean, default=True)
 
     def __init__(self, *args, **kwargs):
         try:
             kwargs.update({"value": kwargs["initial"]})
         except KeyError:
-            raise ChallengeCreateException("Missing initial value for challenge")
+            raise ChallengeCreateException(
+                "Missing initial value for challenge")
         super(InstancerChallengeModel, self).__init__(**kwargs)
         self.value = kwargs["value"]
-        
+
+
+def get_chal(challenge_id: int) -> InstancerChallengeModel:
+    return db.session.get(InstancerChallengeModel, challenge_id)
+
 
 def find_chall_short_name(challenge_id: int) -> str | None:
     """ Find the short name for the challenge """
@@ -55,7 +62,7 @@ def get_instance_id(challenge_id: int, team_id: int) -> int:
     return instance.instance_id
 
 
-def update_instance_id(challenge_id: int, team_id: int, instance_id: int=DEFAULT_INSTANCE_ID):
+def update_instance_id(challenge_id: int, team_id: int, instance_id: int = DEFAULT_INSTANCE_ID):
     """ Update the instance id associated with challenge_id and team_id """
     instance = db.session.query(Instances).filter_by(
         challenge_id=challenge_id, team_id=team_id).first()
@@ -69,6 +76,8 @@ def update_instance_id(challenge_id: int, team_id: int, instance_id: int=DEFAULT
     db.session.commit()
 
 # Note: CTFd requires pydantic v1, this model should be compatible
+
+
 class DeployedPort(BaseModel):
     class Config:
         extra = 'forbid'

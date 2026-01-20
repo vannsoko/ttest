@@ -106,6 +106,10 @@ function loaded_instance_info(instance_data) {
   $('#instancer-panel-running').hide();
   $('#instancer-panel-stopped').hide();
   $('#instancer-panel-building').hide();
+  if (!instance_data.needs_deployment) {
+    return;
+  }
+
   if (instance_data.deployed !== null && instance_data.expires !== null) {
     $('#instancer-panel-running').show();
 
