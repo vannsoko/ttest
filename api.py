@@ -208,7 +208,7 @@ class Instance(Resource):
         logger.debug(f"POST instance: deployChallenge result = {res.status_code}, {res_data}")
 
         if res.status_code != 202 or res_data["status"] != "success":
-            logger.debug(f"POST instance: deployChallenge reported error: {res_data.get("error", "undefined error")}")
+            logger.debug(f"POST instance: deployChallenge reported error: {res_data.get('error', 'undefined error')}")
             return {
                 "success": False,
                 "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
