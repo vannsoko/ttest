@@ -371,12 +371,11 @@ class File(Resource):
                 if chunk:
                     yield chunk
 
+        chall = get_chal(challenge_id)
+        filename = f"{chall.category}_{chall.name.replace("-", "_")}" 
         headers = {
             "Content-Type": get_res.headers.get("Content-Type", "application/octet-stream"),
-            "Content-Disposition": get_res.headers.get(
-                "Content-Disposition",
-                "attachment; filename=chall_files.bin"
-            )
+            "Content-Disposition": f"attachment; filename={filename}.tar"
         }
 
         return Response(
