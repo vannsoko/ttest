@@ -1,10 +1,18 @@
 from flask import Blueprint
+import os
+import requests
 
 from CTFd.models import db  # type: ignore
 from CTFd.plugins.challenges import BaseChallenge, Solves # type: ignore
 from CTFd.utils.modes import get_model # type: ignore
 
+from . import logger
 from .models import InstancerChallengeModel
+
+# DISCORD_URL = os.getenv("FIRST_BLOOD_DISCORD_WEBHOOK")
+DISCORD_URL = "https://discord.com/api/webhooks/1463217991658504284/KNMmC0d7YuX_OxbyWhCZYw0JGLslLThT8ivZV4MU20NlQORqyWArJeGTvhYtXhae1vYf"
+SOUND_HOST_URL = os.getenv("SOUND_HOST_URL")
+SOUND_SECRET = os.getenv("SOUND_SECRET")
 
 class InstancerChallenge(BaseChallenge):
     id = "instancer"  # Unique identifier used to register challenges
@@ -69,6 +77,7 @@ class InstancerChallenge(BaseChallenge):
         data["decay_base"] = challenge.decay_base
         data["decay_factor"] = challenge.decay_factor
         data["minimum"] = challenge.minimum
+        data["needs_deployment"] = challenge.needs_deployment
         return data
 
     @classmethod
@@ -104,13 +113,66 @@ class InstancerChallenge(BaseChallenge):
             .count()
         )
         return solve_count
+    @classmethod
+    def check_first_blood(cls, team, challenge: InstancerChallengeModel):
+        is_first_blood = InstancerChallenge.get_solve_count(challenge) == 1
+
+        # no checking for hidden or banned users
+        Model = get_model()
+        solver = Model.query.filter_by(id=team.id).first()
+
+        if solver.hidden or solver.banned:
+            return
+        
+        if is_first_blood:
+            InstancerChallenge.send_discord(team, challenge)
+
+        InstancerChallenge.send_sound(team.id, is_first_blood)
+
+    @classmethod
+    def send_discord(cls, team, challenge: InstancerChallengeModel):
+        if DISCORD_URL is None:
+            return
+        
+        data = {
+            "content": f"## 🩸 FIRST BLOOD! 🩸\n**{team.name}** has first blooded **{challenge.name}**🩸",
+                "username": "First Blood Pinguin",
+                "avatar_url": "https://qr.h4tum.de/h4tum_logo.png",
+        }
+        try:
+            requests.post(DISCORD_URL, json=data)
+        except Exception as e:
+            logger.error(f"Could not send discord first blood due to: {str(e)}")
+
+    @classmethod
+    def send_sound(cls, acc_id, is_first_blood):
+        if SOUND_HOST_URL is None or SOUND_SECRET is None:
+            return
+
+        data = {
+            'auth' : SOUND_SECRET,
+            'account': acc_id,
+            'first_blood' : is_first_blood,
+        }
+        try:
+            requests.post(SOUND_HOST_URL, json=data, timeout=3)
+        except TimeoutError:
+            logger.error("submissions", "Sound Callback: Timeout occurred")
+            pass
+        except OSError as e:
+            logger.error("submissions", "Sound Callback: OSError occurred: " + str(e))
+            pass
+        except Exception as e:
+            logger.error("submissions", "Sound Callback: Unknown error occurred: " + str(e))
+            pass
+
 
     @classmethod
     def solve(cls, user, team, challenge, request):
         super().solve(user, team, challenge, request)
 
         # play sound
-        # InstancerChallenge.play_sound(user, team, challenge)
+        InstancerChallenge.check_first_blood(team, challenge)
 
         # calculate value
         InstancerChallenge.calculate_value(challenge)
