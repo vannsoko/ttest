@@ -210,7 +210,6 @@ class Instance(Resource):
                 "success": False,
                 "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
             }, 500
-        res_data = res_data["data"]
 
         return {
             "success": True,
