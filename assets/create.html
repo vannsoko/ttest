@@ -9,12 +9,35 @@
 
 {% block value %}
 <div class="form-group">
-	<label for="value">Value<br>
+	<label for="value">Initial Value<br>
 		<small class="form-text text-muted">
-			This is how many points the challenge is worth.
+			This is how many points the challenge is worth initially.
 		</small>
 	</label>
-	<input type="number" class="form-control" name="value" placeholder="Enter value" required>
+	<input type="number" class="form-control" name="initial" placeholder="Enter value" required>
+</div>
+
+<div class="form-group">
+	<label for="value">Decay<br>
+		<small class="form-text text-muted">
+			<span>The points will be calculated the following way, using the supplied values:</span>
+			<span><code>Initial * (DecayBase ^ (DecayFactor * SolveCount) </code></span>
+		</small>
+	</label>
+	<input type="number" step="any" class="form-control" name="decay_base" placeholder="Enter Decay Base" required>
+	<input type="number" step="any" class="form-control" name="decay_factor" placeholder="Enter Decay Factor" required>
+</div>
+
+<div class="form-group">
+	<label for="value">Minimum Value<br>
+		<small class="form-text text-muted">
+			This is the lowest that the challenge can be worth
+		</small>
+	</label>
+	<input type="number" class="form-control" name="minimum" placeholder="Enter minimum value" required>
+</div>
+
+<div class="form-group">
 	<label for="short_name">Short Name<br>
 		<small class="form-text text-muted">
 			Internal short name used for deployment.

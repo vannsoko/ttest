@@ -13,13 +13,17 @@ class InstancerChallengeModel(Challenges):
         db.Integer, db.ForeignKey("challenges.id", ondelete="CASCADE"), primary_key=True
     )
     short_name = db.Column(db.Text, unique=True, nullable=False)
+    initial = db.Column(db.Integer, default=0)
+    minimum = db.Column(db.Integer, default=0)
+    decay_base = db.Column(db.Float, default=0.)
+    decay_factor = db.Column(db.Float, default=0.)
 
     def __init__(self, *args, **kwargs):
         super(InstancerChallengeModel, self).__init__(**kwargs)
         try:
-            self.value = kwargs["value"]
+            self.value = kwargs["initial"]
         except KeyError:
-            raise ChallengeCreateException("Missing value for challenge")
+            raise ChallengeCreateException("Missing initial value for challenge")
 
 
 def find_chall_short_name(challenge_id: int) -> str | None:

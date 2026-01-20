@@ -1,7 +1,8 @@
 from flask import Blueprint
 
 from CTFd.models import db  # type: ignore
-from CTFd.plugins.challenges import BaseChallenge  # type: ignore
+from CTFd.plugins.challenges import BaseChallenge, Solves # type: ignore
+from CTFd.utils.modes import get_model # type: ignore
 
 from .models import InstancerChallengeModel
 
@@ -32,8 +33,20 @@ class InstancerChallenge(BaseChallenge):
     challenge_model = InstancerChallengeModel
 
     @classmethod
+    def calculate_value(cls, challenge):
+        solve_count = InstancerChallenge.get_solve_count(challenge)
+
+        # subtract by 1 to give first solver max points
+        solve_count = max(solve_count - 1, 0)
+
+        value = float(challenge.initial) * pow(challenge.decay_base, - challenge.decay_factor * solve_count)
+
+        challenge.value = int(value)
+        db.session.commit()
+        return challenge
+
+    @classmethod
     def create(cls, request):
-        print("__init__.py: create", flush=True)
         data = request.form or request.get_json()
         challenge = cls.challenge_model(**data)
         db.session.add(challenge)
@@ -50,7 +63,13 @@ class InstancerChallenge(BaseChallenge):
         """
         challenge = InstancerChallengeModel.query.filter_by(
             id=challenge.id).first()
-        return super().read(challenge)
+        
+        data = super().read(challenge)
+        data["initial"] = challenge.initial
+        data["decay_base"] = challenge.decay_base
+        data["decay_factor"] = challenge.decay_factor
+        data["minimum"] = challenge.minimum
+        return data
 
     @classmethod
     def update(cls, challenge, request):
@@ -62,9 +81,37 @@ class InstancerChallenge(BaseChallenge):
         :param request:
         :return:
         """
+        data = request.form or request.get_json()
         super().update(challenge, request)
-        return challenge
+
+        for attr, value in data.items():
+            # We need to set these to floats so that the next operations don't operate on strings
+            if attr in ("initial", "minimum", "decay_base", "decay_factor"):
+                value = float(value)
+            setattr(challenge, attr, value)
+        return InstancerChallenge.calculate_value(challenge)
+
+    @classmethod
+    def get_solve_count(cls, challenge):
+        Model = get_model()
+        solve_count = (
+            Solves.query.join(Model, Solves.account_id == Model.id)
+            .filter(
+                Solves.challenge_id == challenge.id,
+                Model.hidden == False,
+                Model.banned == False,
+            )
+            .count()
+        )
+        return solve_count
 
     @classmethod
     def solve(cls, user, team, challenge, request):
         super().solve(user, team, challenge, request)
+
+        # play sound
+        # InstancerChallenge.play_sound(user, team, challenge)
+
+        # calculate value
+        InstancerChallenge.calculate_value(challenge)
+        
