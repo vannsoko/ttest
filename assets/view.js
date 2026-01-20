@@ -67,6 +67,7 @@ function format_count_down(countdown) {
 
 function show_urls(urls) {
   const $div = $("#instancer-url-div");
+  $div.empty();
   $div.show();
   if (urls.length == 0) {
     $div.hide();
@@ -80,7 +81,7 @@ function show_urls(urls) {
           <code id="${code_id}"></code>
           <button type="button"
                   class="btn btn-outline-secondary btn-sm ms-2 
-                  id=${button_id}">
+                  id="${button_id}">
             <i class="fa-regular fa-copy"></i>
           </button>
         </div>
