@@ -80,7 +80,7 @@ function show_urls(urls) {
         <div class="d-flex align-items-center mb-2">
           <code id="${code_id}"></code>
           <button type="button"
-                  class="btn btn-outline-secondary btn-sm ms-2 
+                  class="btn btn-outline-secondary btn-sm ms-2" 
                   id="${button_id}">
             <i class="fa-regular fa-copy"></i>
           </button>
