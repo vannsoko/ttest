@@ -12,12 +12,8 @@ import os
 
 from .models import (
     get_instance_id,
-    update_instance_id,
     find_chall_short_name,
     DeployedPort,
-    query_instance_urls,
-    add_instance_url,
-    remove_instance_urls,
     get_team_flag
 )
 
@@ -43,17 +39,16 @@ def do_instancer_request(method: str, endpoint: str, params: dict[str, str], str
         return "Request to instancer failed."
 
 
-def query_instance_status(challenge_id: int) -> None | dict[str, Any] | tuple[str, int]:
+def query_instance_status(challenge_id: int) -> dict[str, Any] | tuple[str, int]:
     """
     Queries the challengeStatus of the instancer for the current team, the given challenge.
-    If there is no instance_id associated with (team, challenge), None is returned.
     If the request returns an error, the error message and an appropriate status are returned.
     Else, the json object is returned.
 
     :param challenge_id: ID of the challenge.
     :type challenge_id: int
     :return: see above.
-    :rtype: dict[str, Any] | tuple[str, int] | None
+    :rtype: dict[str, Any] | tuple[str, int]
     """
     chall_short_name = find_chall_short_name(challenge_id)
 
@@ -62,9 +57,6 @@ def query_instance_status(challenge_id: int) -> None | dict[str, Any] | tuple[st
 
     team_id = get_current_team().id
     instance_id = get_instance_id(challenge_id, team_id)
-
-    if instance_id is None:
-        return None
 
     params = {
         "challenge": chall_short_name,
@@ -103,8 +95,8 @@ class Instance(Resource):
                 "success": False,
                 "message": res[0]
             }, res[1]
-
-        if res is None or "deployed" not in res:
+        
+        if res is None:
             return {
                 "success": True,
                 "data": {
@@ -112,31 +104,42 @@ class Instance(Resource):
                 }
             }, 200
         
-        if "expires" is not res or res["expires"] is None:
-            return {
-                "success": True,
-                "data": {
-                    "running": False,
-                }
-            }, 200
+        data = {}
+        for key in ["image_built", "image_building", "files_ready", "files_building", "deployed", "expires"]:
+            if key in res:
+                data[key] = res
+        
+        urls = []
+        for deployed_port_data in res["ports"]:
+            # TODO: deployed_port.description is currently ignored
+            deployed_port = DeployedPort(**deployed_port_data)
+            if not deployed_port.display:
+                # do not show hidden ports to the user
+                continue
 
-        expires = datetime.fromisoformat(res["expires"])
+            if deployed_port.type == "https":
+                if not deployed_port.ssl:
+                    print(
+                        "[error] Got DeployedPort with type = 'https', but ssl = False ", flush=True)
+                    continue
+                port_str = ""
+                if deployed_port.port != 443:
+                    port_str += f":{deployed_port}"
+                url = f"https://{deployed_port.hostname}{port_str}"
+            else:
+                if deployed_port.type != "tcp":
+                    print(
+                        f"[error] Got DeployedPort with unknown type = {deployed_port.type}", flush=True)
+                    continue
+                url = f"nc {' --ssl' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
+        
+            urls.append(url)
 
-        if expires <= datetime.now():
-            return {
-                "success": True,
-                "data": {
-                    "running": False,
-                }
-            }, 200
+        data["urls"] = urls
 
         return {
             "success": True,
-            "data": {
-                "running": True,
-                "expires": expires.isoformat(),
-                "urls": query_instance_urls(challenge_id, get_current_team().id),
-            }
+            "data": data
         }, 200
 
     @staticmethod
@@ -160,9 +163,6 @@ class Instance(Resource):
 
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
-        if instance_id is None:
-            update_instance_id(challenge_id, team_id, 1)
-            instance_id = 1
 
         status_res = query_instance_status(challenge_id)
         assert status_res is not None
@@ -214,37 +214,12 @@ class Instance(Resource):
             }, 500
         res_data = res.json()
 
-        if res.status_code != 200 or res_data["status"] != "success":
+        if res.status_code != 202 or res_data["status"] != "success":
             return {
                 "success": False,
                 "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
             }, 500
         res_data = res_data["data"]
-
-        for deployed_port_data in res_data:
-            # TODO: deployed_port.description is currently ignored
-            deployed_port = DeployedPort(**deployed_port_data)
-            if not deployed_port.display:
-                # do not show hidden ports to the user
-                continue
-
-            if deployed_port.type == "https":
-                if not deployed_port.ssl:
-                    print(
-                        "[error] Got DeployedPort with type = 'https', but ssl = False ", flush=True)
-                    continue
-                port_str = ""
-                if deployed_port.port != 443:
-                    port_str += f":{deployed_port}"
-                url = f"https://{deployed_port.hostname}{port_str}"
-            else:
-                if deployed_port.type != "tcp":
-                    print(
-                        f"[error] Got DeployedPort with unknown type = {deployed_port.type}", flush=True)
-                    continue
-                url = f"nc {' -ssl' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
-
-            add_instance_url(challenge_id, team_id, url)
 
         return {
             "success": True,
@@ -273,12 +248,6 @@ class Instance(Resource):
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
 
-        if instance_id is None:
-            return {
-                "success": False,
-                "message": "No instance running for team."
-            }, 200
-
         params = {
             "challenge": chall_short_name,
             "team": str(team_id),
@@ -299,8 +268,6 @@ class Instance(Resource):
                 "success": False,
                 "message": f"Stopping instance failed with: " + res_data.get("error", "undefined error")
             }, 500
-
-        remove_instance_urls(challenge_id, team_id)
 
         return {
             "success": True,

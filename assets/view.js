@@ -65,17 +65,50 @@ function format_count_down(countdown) {
   return formatted;
 }
 
+function show_urls(urls) {
+  const div = $("#instancer-url-div");
+  div.show();
+  if (div.length == 0) {
+    div.hide();
+    return;
+  }
+  for (const [index, url] of urls.entries()) {
+    const code_id = `instancer-url-${index}`;
+    const button_id = `instancer-button-url-copy-${index}`;
+    const $row = $(`
+        <div class="d-flex align-items-center mb-2">
+          <code class="${code_id}"></code>
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm ms-2 
+                  id=${button_id}">
+            <i class="fa-regular fa-copy"></i>
+          </button>
+        </div>
+      `);
+
+    $row.find("code").text(url);
+    $row.find("button").on("click", function () {
+      const url_text = $(`#${code_id}`).text();
+      navigator.clipboard.writeText(url_text).then(() => {
+        $(`#${button_id}`).html('<i class="fa-solid fa-check"></i>');
+        setTimeout(() => {
+          $(`#${button_id}`).html('<i class="fa-regular fa-copy"></i>');
+        }, 1500);
+      });
+    });
+    $container.append($row);
+  }
+}
+
 function loaded_instance_info(instance_data) {
   $('#instancer-panel-loading').hide();
-  if (instance_data.running) {
+  $('#instancer-panel-running').hide();
+  $('#instancer-panel-stopped').hide();
+  $('#instancer-panel-building').hide();
+  if (instance_data.deployed !== undefined && instance_data.expires !== undefined) {
     $('#instancer-panel-running').show();
 
-    if (instance_data.url !== undefined && instance_data.url != "") {
-      $('#instancer-url-div').css('visibility', 'visible');
-      $('#instancer-url').text(instance_data.url);
-    } else {
-      $('#instancer-url-div').css('visibility', 'hidden');
-    }
+    show_urls(instance_data.urls);
 
     const expires = new Date(instance_data.expires);
     var count_down = expires - new Date();
@@ -90,6 +123,8 @@ function loaded_instance_info(instance_data) {
         $('#instancer-count-down').text(format_count_down(count_down));
       }, 1000);
     }
+  } else if (instance_data.image_building) {
+    $('#instancer-panel-building').show();
   } else {
     $('#instancer-panel-stopped').show();
   }
@@ -107,6 +142,7 @@ function load_instance_info_cache(challenge_id) {
     return false;
   }
   var valid = new Date() - new Date(instance_cache.received_at) < CACHE_VALIDITY;
+  valid &&= instance_cache.data.challenge_id == challenge_id;
   if (!valid) {
     localStorage.removeItem(cache_key);
     return false;
@@ -117,10 +153,15 @@ function load_instance_info_cache(challenge_id) {
   return true;
 }
 
+function set_cache(challenge_id, instance_data) {
+  localStorage.setItem(get_cache_key(), JSON.stringify({ challenge_id: challenge_id, data: instance_data, received_at: new Date() }));
+}
+
+function clear_cache() {
+  localStorage.removeItem(get_cache_key());
+}
+
 function load_instance_info() {
-  $('#instancer-panel-loading').show();
-  $('#instancer-panel-running').hide();
-  $('#instancer-panel-stopped').hide();
   if (window.count_down_interval_id !== undefined) {
     clearInterval(count_down_interval_id);
     window.count_down_interval_id = undefined;
@@ -134,7 +175,7 @@ function load_instance_info() {
   get_req_json(instance_url()).then((instance_response) => {
     if (instance_response.success) {
       const instance_data = instance_response.data;
-      localStorage.setItem(get_cache_key(), JSON.stringify({ data: instance_data, received_at: new Date() }));
+      set_cache(challenge_id, instance_data);
       loaded_instance_info(instance_data);
     } else {
       CTFd._functions.events.eventAlert({
@@ -188,21 +229,17 @@ CTFd._internal.challenge.spawn = function () {
   $('#instancer-button-spawn').prop("disabled", true);
   $('#instancer-spawn-spinner').show();
 
-  post_req_json(instance_url()).then((spawn_response) => {
+  post_req_json(instance_url()).then(async (spawn_response) => {
     $('#instancer-spawn-spinner').hide();
     if (spawn_response.success) {
+      clear_cache();
       load_instance_info();
-      CTFd._functions.events.eventAlert({
-        title: "Success",
-        html: "Your instance has been deployed!",
-      });
     } else {
       CTFd._functions.events.eventAlert({
         title: "Fail",
         html: spawn_response.message,
       });
     }
-
   }).finally(() => {
     $('#instancer-button-spawn').prop('disabled', false);
     $('#instancer-spawn-spinner').hide();
@@ -268,10 +305,4 @@ CTFd._internal.challenge.destroy = function () {
     $('#instancer-button-restart').prop("disabled", false);
   });
 }
-CTFd._internal.challenge.copy_instance_url = function () {
-  const url = $('#instancer-url').text();
-  navigator.clipboard.writeText(url).then(() => {
-    $('#instancer-button-url-copy').html('<i class="fa-solid fa-check"></i>');
-    setTimeout(() => $('#instancer-button-url-copy').html('<i class="fa-regular fa-copy"></i>'), 1500);
-  });
-}
+
