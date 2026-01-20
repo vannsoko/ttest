@@ -20,7 +20,7 @@ class InstancerChallengeModel(Challenges):
 
     def __init__(self, *args, **kwargs):
         try:
-            kwargs.update({"value": kwargs.pop("initial")})
+            kwargs.update({"value": kwargs["initial"]})
         except KeyError:
             raise ChallengeCreateException("Missing initial value for challenge")
         super(InstancerChallengeModel, self).__init__(**kwargs)
