@@ -372,7 +372,7 @@ class File(Resource):
                     yield chunk
 
         chall = get_chal(challenge_id)
-        filename = f"{chall.category}_{chall.name.replace('-', '_').replace(' ', "_")}" 
+        filename = f"{chall.category}_{chall.name.replace('-', '_').replace(' ', '_')}" 
         headers = {
             "Content-Type": get_res.headers.get("Content-Type", "application/octet-stream"),
             "Content-Disposition": f"attachment; filename={filename}.tar"
