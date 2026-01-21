@@ -131,7 +131,7 @@ class Instance(Resource):
                     print(
                         f"[error] Got DeployedPort with unknown type = {deployed_port.type}", flush=True)
                     continue
-                url = f"nc {' --ssl' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
+                url = f"ncat {' --ssl ' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
         
             urls.append(url)
 
