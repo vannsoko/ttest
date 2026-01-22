@@ -14,7 +14,7 @@
                 <input type="number" id="max_team_id" name="max_team_id" required>
                 <br><br>
 
-                {{ form.nonce() }}
+                <input type="hidden" name="nonce" value="{{ nonce }}">
 
                 <button type="submit">Pregenerate</button>
             </form>
