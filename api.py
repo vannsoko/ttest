@@ -3,7 +3,7 @@ from CTFd.utils.decorators import authed_only, admins_only  # type: ignore
 from CTFd.utils.user import get_current_team  # type: ignore
 from CTFd.models import Challenges  # type: ignore
 
-from flask import request, Response, Blueprint, jsonify
+from flask import request, Response, Blueprint, jsonify, render_template
 from flask_restx import Resource
 import requests
 from typing import Any
@@ -433,8 +433,11 @@ def build_files_req(chall_short_name: str, team_id: int, team_flag: str) -> bool
 
 
 @admins_only
-@page_blueprint.route("/pregenerate", methods=["POST"])
+@page_blueprint.route("/pregenerate", methods=["GET", "POST"])
 def pregenerate_imgs():
+    if request.method == "GET":
+        return render_template("pregenerate_imgs.html")
+    
     if "min_team_id" not in request.form or "max_team_id" not in request.form:
         return jsonify({
             "success": False,
