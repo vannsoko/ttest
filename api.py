@@ -2,12 +2,16 @@ from CTFd.api import CTFd_API_v1  # type: ignore
 from CTFd.utils.decorators import authed_only, admins_only  # type: ignore
 from CTFd.utils.user import get_current_team  # type: ignore
 from CTFd.models import Challenges  # type: ignore
+from CTFd.forms import BaseForm # type: ignore
 
 from flask import request, Response, Blueprint, jsonify, render_template
 from flask_restx import Resource
 import requests
 from typing import Any
 import os
+
+from wtforms import SubmitField, IntegerField
+from wtforms.validators import InputRequired
 
 from .util import logger
 
@@ -431,12 +435,18 @@ def build_files_req(chall_short_name: str, team_id: int, team_flag: str) -> bool
 
     return build_res.status_code != 200 and build_res.status_code != 202
 
+class PregenerateForm(BaseForm):
+    min_team_id = IntegerField("min_team_id", validators=[InputRequired()])
+    max_team_id = IntegerField("max_team_id", validators=[InputRequired()])
+    submit = SubmitField("Pregenerate")
+
 
 @admins_only
 @page_blueprint.route("/pregenerate", methods=["GET", "POST"])
 def pregenerate_imgs():
     if request.method == "GET":
-        return render_template("pregenerate_imgs.html")
+        form = PregenerateForm()
+        return render_template("pregenerate_imgs.html", form=form)
     
     if "min_team_id" not in request.form or "max_team_id" not in request.form:
         return jsonify({
