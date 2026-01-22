@@ -14,7 +14,6 @@ from wtforms import SubmitField, IntegerField
 from wtforms.validators import InputRequired
 
 from .util import logger
-
 from .models import (
     get_chal,
     get_instance_id,
@@ -438,6 +437,7 @@ def build_files_req(chall_short_name: str, team_id: int, team_flag: str) -> bool
 class PregenerateForm(BaseForm):
     min_team_id = IntegerField("min_team_id", validators=[InputRequired()])
     max_team_id = IntegerField("max_team_id", validators=[InputRequired()])
+    challenge_id = IntegerField("challenge_id", validators=[InputRequired()])
     submit = SubmitField("Pregenerate")
 
 
@@ -448,7 +448,7 @@ def pregenerate_imgs():
         form = PregenerateForm()
         return render_template("pregenerate_imgs.html", form=form)
     
-    if "min_team_id" not in request.form or "max_team_id" not in request.form:
+    if "min_team_id" not in request.form or "max_team_id" not in request.form or "challenge_id" not in request.form:
         return jsonify({
             "success": False,
             "message": "Missing form parameters"
@@ -457,6 +457,7 @@ def pregenerate_imgs():
     try:
         min_team_id = int(request.form["min_team_id"])
         max_team_id = int(request.form["max_team_id"])
+        challenge_id = int(request.form["challenge_id"])
     except:
         return jsonify({
             "success": False,
@@ -469,20 +470,29 @@ def pregenerate_imgs():
             "message": "min_team_id > max_team_id"
         }), 400
 
-    for challenge in Challenges.query.filter(Challenges.type == "instancer").all():
-        challenge_id = challenge.id
-        chall_short_name = challenge.short_name
-        for team_id in range(min_team_id, max_team_id + 1):
-            team_flag = get_team_flag(challenge_id, team_id)
-            if team_flag is None:
-                continue
-            success = build_img_req(chall_short_name, team_id, team_flag)
-            success |= build_files_req(chall_short_name, team_id, team_flag)
-            if not success:
-                return jsonify({
-                    "success": False,
-                    "message": f"Failed pregeneration for team_id = {team_id}, challenge_id = {challenge_id}!"
-                }), 500
+    challenge = Challenges.query.filter_by(
+        id=challenge_id,
+        type="instancer",
+    ).first()
+
+    if challenge is None:
+        return jsonify({
+            "success": False,
+            "message": "challenge is not an instancer challenge or does not exists"
+        }), 400
+
+    chall_short_name = challenge.short_name
+    for team_id in range(min_team_id, max_team_id + 1):
+        team_flag = get_team_flag(challenge_id, team_id)
+        if team_flag is None:
+            continue
+        success = build_img_req(chall_short_name, team_id, team_flag)
+        success |= build_files_req(chall_short_name, team_id, team_flag)
+        if not success:
+            return jsonify({
+                "success": False,
+                "message": f"Failed pregeneration for team_id = {team_id}, challenge_id = {challenge_id}!"
+            }), 500
 
     return jsonify({
         "success": True,

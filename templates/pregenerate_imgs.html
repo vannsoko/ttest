@@ -6,10 +6,6 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <form action="/instancer-plugin/pregenerate" method="post">
-                <label for="max_team_id">Max Team ID (inclusive):</label>
-                <input type="number" id="max_team_id" name="max_team_id" required>
-                <br><br>
-
                 <div class="mb-3">
                     <b>{{ form.min_team_id.label(class="form-label") }}</b>
                     {{ form.min_team_id(class="form-control") }}
@@ -17,6 +13,10 @@
                 <div class="mb-3">
                     <b>{{ form.max_team_id.label(class="form-label") }}</b>
                     {{ form.max_team_id(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    <b>{{ form.challenge_id.label(class="form-label") }}</b>
+                    {{ form.challenge_id(class="form-control") }}
                 </div>
 
                 <div class="row ">
