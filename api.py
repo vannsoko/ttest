@@ -1,7 +1,7 @@
 from CTFd.api import CTFd_API_v1  # type: ignore
 from CTFd.utils.decorators import authed_only, admins_only  # type: ignore
 from CTFd.utils.user import get_current_team  # type: ignore
-from CTfd.models import Challenges  # type: ignore
+from CTFd.models import Challenges  # type: ignore
 
 from flask import request, Response, Blueprint, jsonify
 from flask_restx import Resource
