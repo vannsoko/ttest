@@ -1,8 +1,9 @@
 from CTFd.api import CTFd_API_v1  # type: ignore
-from CTFd.utils.decorators import authed_only  # type: ignore
+from CTFd.utils.decorators import authed_only, admins_only  # type: ignore
 from CTFd.utils.user import get_current_team  # type: ignore
+from CTfd.models import Challenges  # type: ignore
 
-from flask import request, Response
+from flask import request, Response, Blueprint, jsonify
 from flask_restx import Resource
 import requests
 from typing import Any
@@ -19,6 +20,7 @@ from .models import (
 )
 
 PLUGIN_PREFIX = "/plugins/instancer-plugin"
+
 
 def do_instancer_request(method: str, endpoint: str, params: dict[str, str], stream: bool = False) -> requests.Response | str:
     api_token = os.environ["CTFD_INSTANCER_API_TOKEN"]
@@ -95,7 +97,7 @@ class Instance(Resource):
                 "success": False,
                 "message": res[0]
             }, res[1]
-        
+
         if res is None:
             return {
                 "success": True,
@@ -103,12 +105,12 @@ class Instance(Resource):
                     "running": False
                 }
             }, 200
-        
+
         data = {}
         for key in ["image_built", "image_building", "files_ready", "files_building", "deployed", "expires"]:
             if key in res:
                 data[key] = res[key]
-        
+
         urls = []
         for deployed_port_data in res["ports"]:
             # TODO: deployed_port.description is currently ignored
@@ -132,7 +134,9 @@ class Instance(Resource):
                         f"[error] Got DeployedPort with unknown type = {deployed_port.type}", flush=True)
                     continue
                 url = f"ncat {' --ssl ' if deployed_port.ssl else ''}{deployed_port.hostname} {deployed_port.port}"
-        
+
+            if deployed_port.description != None and len(deployed_port.description) > 0:
+                url = f"{deployed_port.description}: {url}"
             urls.append(url)
 
         data["urls"] = urls
@@ -155,7 +159,7 @@ class Instance(Resource):
                 "success": False,
                 "message": "No challengeId provided!"
             }, 400
-        
+
         if not get_chal(challenge_id).needs_deployment:
             return {
                 "success": False,
@@ -175,16 +179,18 @@ class Instance(Resource):
         team_id = get_current_team().id
         instance_id = get_instance_id(challenge_id, team_id)
 
-        logger.debug(f"POST instance: query_instance_status: {challenge_id}, {team_id}, {instance_id}")
+        logger.debug(
+            f"POST instance: query_instance_status: {challenge_id}, {team_id}, {instance_id}")
         status_res = query_instance_status(challenge_id)
         assert status_res is not None
         if isinstance(status_res, tuple):
-            logger.debug(f"POST instance: query_instance_status failed: {status_res[0]}, {status_res[1]}")
+            logger.debug(
+                f"POST instance: query_instance_status failed: {status_res[0]}, {status_res[1]}")
             return {
                 "success": False,
                 "message": status_res[0]
             }, status_res[1]
-        
+
         logger.debug(f"POST instance: query_instance_status = {status_res}")
 
         team_flag = get_team_flag(challenge_id, team_id)
@@ -210,10 +216,12 @@ class Instance(Resource):
                 "message": res
             }, 500
         res_data = res.json()
-        logger.debug(f"POST instance: deployChallenge result = {res.status_code}, {res_data}")
+        logger.debug(
+            f"POST instance: deployChallenge result = {res.status_code}, {res_data}")
 
         if (res.status_code != 202 and res.status_code != 200) or (res_data["status"] != "success" and res_data["status"] != "building"):
-            logger.debug(f"POST instance: deployChallenge reported error: {res_data.get('error', 'undefined error')}")
+            logger.debug(
+                f"POST instance: deployChallenge reported error: {res_data.get('error', 'undefined error')}")
             return {
                 "success": False,
                 "message": "Instancer failed deployment with: " + res_data.get("error", "undefined error")
@@ -372,7 +380,7 @@ class File(Resource):
                     yield chunk
 
         chall = get_chal(challenge_id)
-        filename = f"{chall.category}_{chall.name.replace('-', '_').replace(' ', '_')}" 
+        filename = f"{chall.category}_{chall.name.replace('-', '_').replace(' ', '_')}"
         headers = {
             "Content-Type": get_res.headers.get("Content-Type", "application/octet-stream"),
             "Content-Disposition": f"attachment; filename={filename}.tar"
@@ -383,3 +391,86 @@ class File(Resource):
             headers=headers,
             status=200
         )
+
+
+page_blueprint = Blueprint(
+    "instancer-plugin",
+    __name__,
+    template_folder="templates",
+    static_folder="assets",
+    url_prefix="/instancer-plugin"
+)
+
+
+def build_img_req(chall_short_name: str, team_id: int, team_flag: str) -> bool:
+    build_params = {
+        "challenge": chall_short_name,
+        "team": str(team_id),
+        "flag": team_flag,
+        "force": False
+    }
+    build_res = do_instancer_request(
+        "POST", "buildImage", build_params)
+    if isinstance(build_res, str):
+        return False
+
+    return build_res.status_code != 200 and build_res.status_code != 202
+
+
+def build_files_req(chall_short_name: str, team_id: int, team_flag: str) -> bool:
+    build_params = {
+        "challenge": chall_short_name,
+        "team": str(team_id),
+        "flag": team_flag,
+        "force": False
+    }
+    build_res = do_instancer_request(
+        "POST", "buildFiles", build_params)
+    if isinstance(build_res, str):
+        return False
+
+    return build_res.status_code != 200 and build_res.status_code != 202
+
+
+@admins_only
+@page_blueprint.route("/pregenerate", methods=["POST"])
+def pregenerate_imgs():
+    if "min_team_id" not in request.form or "max_team_id" not in request.form:
+        return jsonify({
+            "success": False,
+            "message": "Missing form parameters"
+        }), 400
+
+    try:
+        min_team_id = int(request.form["min_team_id"])
+        max_team_id = int(request.form["max_team_id"])
+    except:
+        return jsonify({
+            "success": False,
+            "message": "Failed to parse numbers from form."
+        }), 400
+
+    if min_team_id > max_team_id:
+        return jsonify({
+            "success": False,
+            "message": "min_team_id > max_team_id"
+        }), 400
+
+    for challenge in Challenges.query.filter(Challenges.type == "instancer").all():
+        challenge_id = challenge.id
+        chall_short_name = challenge.short_name
+        for team_id in range(min_team_id, max_team_id + 1):
+            team_flag = get_team_flag(challenge_id, team_id)
+            if team_flag is None:
+                continue
+            success = build_img_req(chall_short_name, team_id, team_flag)
+            success |= build_files_req(chall_short_name, team_id, team_flag)
+            if not success:
+                return jsonify({
+                    "success": False,
+                    "message": f"Failed pregeneration for team_id = {team_id}, challenge_id = {challenge_id}!"
+                }), 500
+
+    return jsonify({
+        "success": True,
+    }), 200

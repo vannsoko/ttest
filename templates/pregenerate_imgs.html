@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="/instance-plugin/pregenerate" method="post">
+    <label for="min_team_id">Min Team ID (inclusive):</label>
+    <input type="number" id="min_team_id" name="min_team_id" required>
+    <br><br>
+
+    <label for="max_team_id">Max Team ID (inclusive):</label>
+    <input type="number" id="max_team_id" name="max_team_id" required>
+    <br><br>
+
+    <button type="submit">Pregenerate</button>
+</form>
+{% endblock %}
