@@ -6,17 +6,25 @@
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <form action="/instancer-plugin/pregenerate" method="post">
-                <label for="min_team_id">Min Team ID (inclusive):</label>
-                <input type="number" id="min_team_id" name="min_team_id" required>
-                <br><br>
-
                 <label for="max_team_id">Max Team ID (inclusive):</label>
                 <input type="number" id="max_team_id" name="max_team_id" required>
                 <br><br>
 
-                <input type="hidden" name="nonce" value="{{ nonce }}">
+                <div class="mb-3">
+                    <b>{{ form.min_team_id.label(class="form-label") }}</b>
+                    {{ form.min_team_id(class="form-control") }}
+                </div>
+                <div class="mb-3">
+                    <b>{{ form.max_team_id.label(class="form-label") }}</b>
+                    {{ form.max_team_id(class="form-control") }}
+                </div>
 
-                <button type="submit">Pregenerate</button>
+                <div class="row ">
+                    <div class="col-md-12">
+                        {{ form.submit(class="btn btn-success float-end px-4") }}
+                    </div>
+                </div>
+                {{ form.nonce() }}
             </form>
         </div>
     </div>
