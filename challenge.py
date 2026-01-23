@@ -125,8 +125,7 @@ class InstancerChallenge(BaseChallenge):
         
         if is_first_blood:
             InstancerChallenge.send_discord(team, challenge)
-
-        InstancerChallenge.send_sound(team.id, is_first_blood)
+            InstancerChallenge.send_sound(team.id, is_first_blood)
 
     @classmethod
     def send_discord(cls, team, challenge: InstancerChallengeModel):
