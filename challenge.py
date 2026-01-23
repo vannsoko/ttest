@@ -46,7 +46,7 @@ class InstancerChallenge(BaseChallenge):
         # subtract by 1 to give first solver max points
         solve_count = max(solve_count - 1, 0)
 
-        value = float(challenge.initial) * pow(challenge.decay_base, - challenge.decay_factor * solve_count)
+        value = max(float(challenge.initial) * pow(challenge.decay_base, - challenge.decay_factor * solve_count), challenge.minimum)
 
         challenge.value = int(value)
         db.session.commit()
