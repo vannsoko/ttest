@@ -193,6 +193,21 @@ function load_instance_info() {
 }
 
 
+const downloadBtn = document.getElementById("download-file-bouton");
+if (downloadBtn) {
+  const url = new URL(downloadBtn.href, window.location.origin);
+  get_req_json(url).then((response) => {
+    if (response.status === 500) {
+      response.json().then((data) => {
+        if (data.file === false) {
+          downloadBtn.remove();
+        }
+      });
+    }
+  });
+}
+
+
 CTFd._internal.challenge.submit = function (preview) {
   var challenge_id = parseInt(CTFd.lib.$("#challenge-id").val());
   var submission = CTFd.lib.$("#challenge-input").val();

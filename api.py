@@ -322,7 +322,8 @@ class File(Resource):
         if isinstance(get_res, str):
             return {
                 "success": False,
-                "message": get_res
+                "message": get_res,
+                "file": False
             }, 500
 
         if get_res.status_code != 200:
